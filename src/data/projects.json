@@ -1,0 +1,67 @@
+[
+    {
+        "id": 1,
+        "slug": "image-to-graph",
+        "title": "Image to Graph",
+        "subtitle": "Fullstack Developer",
+        "role": "Lead Designer & Developer",
+        "year": "2026",
+        "techStack": "Vue.js • OpenCV",
+        "github": "https://github.com/MMOSHII/image-to-graph",
+        "website": "https://mmoshii.github.io/image-to-graph/",
+        "description": "Image to Graph adalah proyek berbasis web yang mengubah gambar menjadi bentuk grafik matematika yang dapat digunakan pada Desmos. Aplikasi ini memungkinkan pengguna mengunggah gambar, kemudian memprosesnya menjadi representasi grafik sehingga visual dapat direkonstruksi menggunakan persamaan matematika. Proyek ini dikembangkan menggunakan teknologi web modern dengan Vite, JavaScript, dan Tailwind CSS. Image to Graph menjadi solusi sederhana untuk menghubungkan pengolahan gambar, matematika, dan visualisasi interaktif dalam satu aplikasi berbasis web.",
+        "image": "/assets/berzier-3.png",
+        "gallery": [
+            "/assets/berzier-1.png",
+            "/assets/berzier-2.png",
+            "/assets/berzier-4.png"
+        ],
+        "metaTopLeft": "Vue.js • OpenCV",
+        "metaTopRight": "WEB DEV",
+        "metaBottomRight": "HOBBYIST"
+    },
+    {
+        "id": 2,
+        "slug": "i-love-pdf-lite",
+        "title": "Replicate i love PDF",
+        "subtitle": "Fullstack Developer",
+        "role": "Lead Designer & Developer",
+        "year": "2026",
+        "techStack": "Vue.js • Tesseract",
+        "github": "https://github.com/MMOSHII/i-love-pdf-lite",
+        "website": "https://mmoshii.github.io/i-love-pdf-lite/",
+        "description": "iLovePDF Lite adalah aplikasi web ringan yang terinspirasi dari iLovePDF, dirancang untuk menyediakan pengalaman pengelolaan dokumen PDF secara sederhana dan mudah digunakan. Proyek ini dikembangkan menggunakan JavaScript, HTML, Vite, dan Tailwind CSS, dengan antarmuka yang dikustomisasi sesuai kebutuhan. Aplikasi ini menjadi eksperimen dalam membangun alternatif layanan PDF populer dengan pendekatan minimalis, sekaligus mengeksplorasi pengembangan frontend modern, desain antarmuka, dan implementasi fitur pengolahan dokumen berbasis web.",
+        "image": "/assets/pdf-1.png",
+        "gallery": [
+            "/assets/pdf-2.png",
+            "/assets/pdf-3.png",
+            "/assets/pdf-4.png",
+            "/assets/pdf-5.png"
+        ],
+        "metaTopLeft": "Vue.js • Tesseract",
+        "metaTopRight": "WEB DEV",
+        "metaBottomRight": "HOBBYIST"
+    },
+    {
+        "id": 3,
+        "slug": "record-note",
+        "title": "Record Note",
+        "subtitle": "BACKEND & UI/UX",
+        "role": "Backend Developer & UI/UX Designer",
+        "year": "2026",
+        "techStack": "Python • Fast API • Vue.js • Ollama",
+        "github": "https://github.com/MMOSHII/Record-Note-API",
+        "website": null,
+        "description": "RecordNote adalah aplikasi berbasis AI untuk mengubah rekaman audio menjadi informasi terstruktur. Sistem ini terdiri dari frontend berbasis Vue 3 dan backend FastAPI yang menangani proses transkripsi, pemisahan pembicara, peringkasan, penerjemahan, serta visualisasi timeline. Pengguna dapat merekam atau mengunggah audio, mengedit transkrip, menerjemahkan hasil, membuat flashcard, dan berinteraksi dengan isi rekaman melalui chatbot. Sistem juga mendukung autentikasi, riwayat pemrosesan, serta pemrosesan AI secara lokal.",
+        "image": "/assets/mic-1.png",
+        "gallery": [
+            "/assets/mic-2.png",
+            "/assets/mic-3.png",
+            "/assets/mic-4.png",
+            "/assets/mic-5.png"
+        ],
+        "metaTopLeft": "Vue.js • FastAPI",
+        "metaTopRight": "WEB DEV",
+        "metaBottomRight": "Tugas Akhir"
+    }
+]
