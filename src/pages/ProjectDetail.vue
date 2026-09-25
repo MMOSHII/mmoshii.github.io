@@ -2,13 +2,11 @@
     <div class="project-detail-wrapper" ref="pageRef">
         <CustomCursor :is-holding="isAnimating" :progress="0" />
 
-        <!-- Background Ambient Blur -->
         <div class="bg-blur" v-if="project">
             <img :src="project.image" class="bg-image" />
             <div class="bg-overlay"></div>
         </div>
 
-        <!-- Navigation Header -->
         <header class="detail-header">
             <button class="back-btn" @click="handleBack">
                 <span class="arrow">←</span>
@@ -17,7 +15,6 @@
             <div class="header-index">// PROJECT / {{ project ? String(project.id).padStart(2, '0') : '00' }}</div>
         </header>
 
-        <!-- Main Project Content -->
         <div class="project-detail" v-if="project" :key="route.params.slug">
             <section class="hero-section">
                 <div class="meta-tags">
@@ -53,8 +50,8 @@
                         <p class="info-value">{{ project.techStack || 'undefined' }}</p>
                     </div>
                     <div class="info-block">
-                        <span class="info-label">LOCATION</span>
-                        <p class="info-value">{{ project.metaBottomLeft || 'Global' }}</p>
+                        <span class="info-label">STATS</span>
+                        <p class="info-value">{{ project.metaBottomLeft || 'Done' }}</p>
                     </div>
                 </div>
 
@@ -63,7 +60,6 @@
                     <p>{{ project.description || 'No description available for this project.' }}</p>
                 </div>
 
-                <!-- External Links Section -->
                 <div class="project-links" v-if="project.github || project.website">
                     <a 
                         v-if="project.github" 
@@ -91,7 +87,6 @@
                 </div>
             </section>
 
-            <!-- Pinned Horizontal Gallery -->
             <section class="gallery-section" v-if="project.gallery && project.gallery.length" ref="gallerySectionRef">
                 <h3 class="gallery-title">// GALLERY SHOWCASE</h3>
                 <div class="gallery-wrapper" ref="galleryWrapperRef">
@@ -108,7 +103,6 @@
                 </div>
             </section>
 
-            <!-- Scroll-Driven Page Transition Footer -->
             <footer class="next-project-footer" ref="footerRef" v-if="nextProject">
                 <div class="footer-content">
                     <span class="next-label">// SCROLL TO NEXT PROJECT</span>
@@ -120,7 +114,6 @@
             </footer>
         </div>
 
-        <!-- Fallback if project is not found -->
         <div class="not-found" v-else>
             <h2>404</h2>
             <p>Project not found.</p>
@@ -132,8 +125,10 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
 import projectData from '@/data/projects.json'
 import CustomCursor from '@/components/CustomCursor.vue'
 
@@ -267,21 +262,39 @@ const setupAnimationsAndScroll = async () => {
             pin: true,
             pinSpacing: true,
             onUpdate: (self) => {
-                if (progressBarRef.value) {
-                    gsap.set(progressBarRef.value, { scaleX: self.progress })
-                }
+                if (isTransitioning.value) return
 
-                if (self.progress >= 0.99 && !isTransitioning.value) {
-                    isTransitioning.value = true
-                    
-                    if (triggerCinematicNavigate) {
-                        triggerCinematicNavigate(
-                            nextProject.value.title, 
-                            `/${nextProject.value.slug}`
-                        )
-                    } else {
-                        router.push(`/${nextProject.value.slug}`)
+                if (self.progress < 0.7) {
+                    if (progressBarRef.value) {
+                        gsap.set(progressBarRef.value, { scaleX: self.progress })
                     }
+                } else {
+                    isTransitioning.value = true
+
+                    if (progressBarRef.value) {
+                        gsap.to(progressBarRef.value, {
+                            scaleX: 1,
+                            duration: 0.4,
+                            ease: 'power2.out'
+                        })
+                    }
+
+                    const targetScroll = self.start + (self.end - self.start)
+                    gsap.to(window, {
+                        scrollTo: targetScroll,
+                        duration: 0.4,
+                        ease: 'power2.out',
+                        onComplete: () => {
+                            if (triggerCinematicNavigate) {
+                                triggerCinematicNavigate(
+                                    nextProject.value.title, 
+                                    `/${nextProject.value.slug}`
+                                )
+                            } else {
+                                router.push(`/${nextProject.value.slug}`)
+                            }
+                        }
+                    })
                 }
             }
         })
@@ -310,16 +323,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,900&family=Inter:wght@300;400;600&display=swap');
-
 .project-detail-wrapper {
-    --bg-color: #000000;
-    --text-primary: #ffffff;
-    --text-muted: #888888;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --font-serif: 'Playfair Display', serif;
-    --font-sans: 'Inter', sans-serif;
-
     background-color: var(--bg-color);
     color: var(--text-primary);
     min-height: 100vh;
@@ -442,10 +446,10 @@ onUnmounted(() => {
     text-transform: uppercase;
 }
 
-/* Hero Media Showcase Frame */
 .media-section {
     margin-bottom: clamp(40px, 6vw, 80px);
 }
+
 .image-frame {
     position: relative;
     width: 100%;
@@ -575,7 +579,6 @@ onUnmounted(() => {
     transform: translate(2px, -2px);
 }
 
-/* Pinned Horizontal Gallery Section */
 .gallery-section {
     position: relative;
     width: 100%;
@@ -587,6 +590,18 @@ onUnmounted(() => {
     overflow: hidden;
     padding: clamp(20px, 4vw, 40px) 0;
     box-sizing: border-box;
+}
+
+.gallery-section::-webkit-scrollbar {
+    height: 2px;
+}
+
+.gallery-section::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.gallery-section::-webkit-scrollbar-thumb {
+    background: var(--text-primary, #ffffff);
 }
 
 .gallery-title {

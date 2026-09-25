@@ -1,17 +1,14 @@
 <template>
     <div class="app-container">
-        <!-- Transitions -->
-        <CinematicTransition ref="cinematicRef" />
+        <PageTransition ref="cinematicRef" />
         <PortalTransition ref="portalRef" />
 
-        <!-- Keep PreHome mounted during the zoom transition -->
         <PreHome 
             v-if="showPreHome" 
             ref="preHomeRef"
             @enter="handlePreHomeEnter" 
         />
 
-        <!-- Main Home / Routes -->
         <router-view v-else v-slot="{ Component }">
             <Transition name="fade" mode="out-in">
                 <component :is="Component" />
@@ -23,8 +20,9 @@
 <script setup>
 import { ref, computed, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import PreHome from '@/components/PreHome.vue'
-import CinematicTransition from '@/components/CinematicTransition.vue'
+import PageTransition from '@/components/PageTransition.vue'
 import PortalTransition from '@/components/PortalTransition.vue'
 
 const route = useRoute()
@@ -72,16 +70,6 @@ provide('triggerCinematicNavigate', triggerCinematicNavigate)
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background-color: #000000;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.8s ease-in-out;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
+    background-color: var(--bg-color);
 }
 </style>

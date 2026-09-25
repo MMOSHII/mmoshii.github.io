@@ -3,11 +3,11 @@
         class="gallery-app" 
         @wheel.prevent="handleWheel"
         @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
     >
         <CustomCursor :is-holding="isAnimating" :progress="0" />
 
-        <!-- Background Blur Layer -->
         <div class="bg-blur">
             <div 
                 v-for="(item, index) in items" 
@@ -15,18 +15,16 @@
                 class="bg-image-wrapper"
                 :class="{ active: activeIndex === index }"
             >
-                <img :src="item.image" class="bg-image" />
+                <img :src="item.image" class="bg-image" alt="" />
             </div>
             <div class="bg-overlay"></div>
         </div>
 
-        <!-- Framing Lines (Hidden on Mobile) -->
         <div class="border-top desktop-only"></div>
         <div class="border-bottom desktop-only"></div>
         <div class="border-left desktop-only"></div>
         <div class="border-right desktop-only"></div>
 
-        <!-- Left Social Sidebar -->
         <aside class="sidebar-left desktop-only">
             <div class="sidebar-text">// SOCIAL //</div>
             <div class="social-links">
@@ -46,7 +44,15 @@
             <div class="sidebar-text bottom">// LINKS //</div>
         </aside>
 
-        <!-- Right Index Tracker Sidebar (Adapted for Mobile) -->
+        <header class="mobile-header mobile-only">
+            <span class="mobile-brand">// GALLERY //</span>
+            <div class="mobile-socials">
+                <a href="https://github.com/MMOSHII" target="_blank" rel="noopener noreferrer">GH</a>
+                <a href="https://www.linkedin.com/in/achmad-hadi-rasyid" target="_blank" rel="noopener noreferrer">LI</a>
+                <a href="https://www.instagram.com/shiao_11421/" target="_blank" rel="noopener noreferrer">IG</a>
+            </div>
+        </header>
+
         <aside class="sidebar-right">
             <div class="sidebar-text desktop-only">// INDEX //</div>
             <div class="vertical-tracker">
@@ -56,6 +62,7 @@
                     class="tracker-dash"
                     :class="{ active: activeIndex === index }"
                     @click="goToSlide(index)"
+                    :aria-label="`Go to slide ${index + 1}`"
                 >
                     <span class="tooltip desktop-only">{{ item.title }}</span>
                 </div>
@@ -63,7 +70,6 @@
             <div class="sidebar-text bottom desktop-only">2026</div>
         </aside>
 
-        <!-- Main Gallery Container -->
         <main class="gallery-container">
             <transition-group 
                 :css="false"
@@ -100,13 +106,17 @@
                             <span class="meta-block right desktop-only">{{ item.metaTopRight }}</span>
                         </div>
                         <div class="meta-row bottom">
-                            <span class="meta-block desktop-only">{{ item.year }}</span>
+                            <span class="meta-block">{{ item.year }}</span>
                             <span class="meta-block right">{{ item.metaBottomRight }}</span>
                         </div>
                     </div>
                 </section>
             </transition-group>
         </main>
+
+        <div class="mobile-swipe-hint mobile-only">
+            <span>SWIPE TO NAVIGATE</span>
+        </div>
     </div>
 </template>
 
@@ -119,13 +129,19 @@ import CustomCursor from '@/components/CustomCursor.vue';
 const activeIndex = ref(0);
 const isAnimating = ref(false);
 const direction = ref(1);
+
 let touchStartY = 0;
+let touchEndY = 0;
+
+// Throttle configuration for mouse wheel / trackpad
+let lastScrollTime = 0;
+const SCROLL_COOLDOWN_MS = 800; // Time in ms before a new scroll can be triggered
 
 const items = ref(projectData);
-
 const triggerCinematicNavigate = inject('triggerCinematicNavigate');
 
 const navigateToProject = (slug) => {
+    if (isAnimating.value) return; // Prevent navigation clicks while transitioning
     const currentProject = items.value.find(p => p.slug === slug);
     const title = currentProject ? currentProject.title : 'PROJECT';
     
@@ -135,15 +151,17 @@ const navigateToProject = (slug) => {
 };
 
 const goToSlide = (index) => {
+    // Guard against clicks/scrolls during active transition
     if (isAnimating.value || activeIndex.value === index) return;
     direction.value = index > activeIndex.value ? 1 : -1;
     activeIndex.value = index;
 };
 
 const changeSlide = (dir) => {
+    // Strict Guard: block transition request if already animating
     if (isAnimating.value) return;
-    direction.value = dir;
     
+    direction.value = dir;
     if (dir === 1) {
         activeIndex.value = (activeIndex.value + 1) % items.value.length;
     } else {
@@ -152,7 +170,7 @@ const changeSlide = (dir) => {
 };
 
 const onBeforeEnter = (el) => {
-    isAnimating.value = true;
+    isAnimating.value = true; // Lock animations
     const imgWrapper = el.querySelector('.image-wrapper');
     const img = el.querySelector('.img-inner img');
     const title = el.querySelector('.main-title');
@@ -160,10 +178,12 @@ const onBeforeEnter = (el) => {
     const metas = el.querySelectorAll('.meta-block');
     const dir = direction.value;
 
+    const isMobile = window.innerWidth <= 768;
+
     if (title.textContent.length > 12) {
-        title.style.fontSize = 'clamp(1.8rem, 5.5vw, 6.5vw)';
+        title.style.fontSize = isMobile ? 'clamp(1.5rem, 6.5vw, 2.5rem)' : 'clamp(1.8rem, 5.5vw, 6.5vw)';
     } else {
-        title.style.fontSize = '';
+        title.style.fontSize = isMobile ? 'clamp(1.8rem, 8.5vw, 3.2rem)' : '';
     }
 
     gsap.set(el, { opacity: 1, zIndex: 10 });
@@ -187,10 +207,11 @@ const onEnter = (el, done) => {
     const subtitle = el.querySelector('.subtitle');
     const metas = el.querySelectorAll('.meta-block');
     
+    // Slightly faster duration prevents "laggy/sluggish" input feel
     const tl = gsap.timeline({ 
-        defaults: { ease: 'expo.out' },
+        defaults: { ease: 'power4.out' },
         onComplete: () => {
-            isAnimating.value = false;
+            isAnimating.value = false; // Unlock guard only when timeline is completely done
             done();
         } 
     });
@@ -199,29 +220,29 @@ const onEnter = (el, done) => {
         yPercent: 0, 
         scale: 1, 
         clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-        duration: 1.6
+        duration: 1.1
     }, 0)
     .to(img, { 
         scale: 1, 
         yPercent: 0, 
-        duration: 1.6
+        duration: 1.1
     }, 0)
     .to(title, { 
         yPercent: 0, 
         opacity: 1, 
-        duration: 1.4
-    }, 0.25)
+        duration: 0.9
+    }, 0.15)
     .to(subtitle, { 
         yPercent: 0, 
         opacity: 1, 
-        duration: 1.3
-    }, 0.35)
+        duration: 0.8
+    }, 0.25)
     .to(metas, { 
         y: 0, 
         opacity: 1, 
-        duration: 1.0, 
-        stagger: 0.04
-    }, 0.45);
+        duration: 0.6, 
+        stagger: 0.03
+    }, 0.3);
 };
 
 const onLeave = (el, done) => {
@@ -235,7 +256,7 @@ const onLeave = (el, done) => {
     gsap.set(el, { zIndex: 1 });
     
     const tl = gsap.timeline({ 
-        defaults: { ease: 'power4.inOut' },
+        defaults: { ease: 'power3.inOut' },
         onComplete: done 
     });
 
@@ -243,72 +264,84 @@ const onLeave = (el, done) => {
         yPercent: dir * -45, 
         scale: 0.92, 
         clipPath: dir > 0 ? 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)' : 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)',
-        duration: 1.3
+        duration: 0.9
     }, 0)
     .to(img, { 
         scale: 1.25, 
         yPercent: dir * 18, 
-        duration: 1.3
+        duration: 0.9
     }, 0)
     .to(title, { 
         yPercent: dir * -110, 
         opacity: 0, 
-        duration: 0.9
+        duration: 0.6
     }, 0)
     .to(subtitle, { 
         yPercent: dir * -90, 
         opacity: 0, 
-        duration: 0.9
+        duration: 0.6
     }, 0)
     .to(metas, { 
         y: dir * -15, 
         opacity: 0, 
-        duration: 0.7
+        duration: 0.5
     }, 0);
 };
 
+// WHEEL HANDLER WITH THROTTLE & ANIMATION LOCK
 const handleWheel = (e) => {
+    const now = Date.now();
+    
+    // 1. Ignore wheel events if an animation is actively playing
+    if (isAnimating.value) return;
+
+    // 2. Ignore wheel events if within the cooldown threshold (prevents trackpad inertia spam)
+    if (now - lastScrollTime < SCROLL_COOLDOWN_MS) return;
+
     if (Math.abs(e.deltaY) > 20) {
+        lastScrollTime = now;
         changeSlide(e.deltaY > 0 ? 1 : -1);
     }
 };
 
+// TOUCH HANDLERS WITH ANIMATION LOCK
 const handleTouchStart = (e) => {
+    if (isAnimating.value) return;
     touchStartY = e.touches[0].clientY;
+    touchEndY = e.touches[0].clientY;
 };
 
-const handleTouchEnd = (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const deltaY = touchStartY - touchEndY;
+const handleTouchMove = (e) => {
+    if (isAnimating.value) return;
+    touchEndY = e.touches[0].clientY;
+};
+
+const handleTouchEnd = () => {
+    if (isAnimating.value) return;
     
-    if (Math.abs(deltaY) > 30) {
+    const deltaY = touchStartY - touchEndY;
+    const minSwipeDistance = 40;
+    
+    if (Math.abs(deltaY) > minSwipeDistance) {
         changeSlide(deltaY > 0 ? 1 : -1);
     }
 };
 
 onMounted(() => {
     gsap.fromTo('.gallery-container', 
-        { scale: 1.15, filter: 'blur(15px)', opacity: 0 },
-        { scale: 1, filter: 'blur(0px)', opacity: 1, duration: 1.4, ease: 'power3.out', delay: 0.2 }
+        { scale: 1.08, filter: 'blur(12px)', opacity: 0 },
+        { scale: 1, filter: 'blur(0px)', opacity: 1, duration: 1.2, ease: 'power3.out', delay: 0.1 }
     );
     
-    gsap.fromTo('.sidebar-left', { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power2.out', delay: 0.5 });
-    gsap.fromTo('.sidebar-right', { x: 50, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power2.out', delay: 0.5 });
+    if (window.innerWidth > 768) {
+        gsap.fromTo('.sidebar-left', { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power2.out', delay: 0.4 });
+    }
+    gsap.fromTo('.sidebar-right', { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power2.out', delay: 0.4 });
 });
-
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,900&family=Inter:wght@300;400;600&display=swap');
-
 .gallery-app {
-    --bg-color: #000000;
-    --text-primary: #ffffff;
-    --text-muted: #666666;
-    --border-color: rgba(255, 255, 255, 0.06);
-    --font-serif: 'Playfair Display', serif;
-    --font-sans: 'Inter', sans-serif;
-    
     background-color: var(--bg-color);
     color: var(--text-primary);
     height: 100vh;
@@ -318,6 +351,23 @@ onMounted(() => {
     font-family: var(--font-sans);
     position: relative;
     touch-action: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+}
+
+.mobile-only {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+    
+    .mobile-only {
+        display: flex !important;
+    }
 }
 
 @media (min-width: 1025px) {
@@ -362,12 +412,7 @@ onMounted(() => {
     background: radial-gradient(circle at center, transparent 0%, #000000 90%);
 }
 
-@media (max-width: 768px) {
-    .desktop-only {
-        display: none !important;
-    }
-}
-
+/* Borders */
 .border-top, .border-bottom, .border-left, .border-right {
     position: absolute;
     background: var(--border-color);
@@ -379,6 +424,7 @@ onMounted(() => {
 .border-left { top: 70px; bottom: 70px; left: 70px; width: 1px; }
 .border-right { top: 70px; bottom: 70px; right: 70px; width: 1px; }
 
+/* Sidebars */
 .sidebar-left, .sidebar-right {
     position: absolute;
     top: 0; bottom: 0;
@@ -395,7 +441,7 @@ onMounted(() => {
 
 @media (max-width: 768px) {
     .sidebar-right {
-        right: 15px;
+        right: 12px;
         width: auto;
         padding: 0;
         justify-content: center;
@@ -461,11 +507,53 @@ onMounted(() => {
     transform: translateY(-50%) translateX(0) rotate(-180deg);
 }
 
+/* Mobile Top Header */
+.mobile-header {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    left: 20px;
+    right: 20px;
+    z-index: 102;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mobile-brand {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.mobile-socials {
+    display: flex;
+    gap: 14px;
+}
+
+.mobile-socials a {
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    padding: 4px;
+}
+
+.mobile-socials a:active {
+    color: var(--text-primary);
+}
+
 .vertical-tracker {
     display: flex;
     flex-direction: column;
     gap: 15px;
     align-items: center;
+}
+
+@media (max-width: 768px) {
+    .vertical-tracker {
+        gap: 10px;
+    }
 }
 
 .tracker-dash {
@@ -477,6 +565,15 @@ onMounted(() => {
     cursor: pointer;
 }
 
+@media (max-width: 768px) {
+    .tracker-dash {
+        width: 4px;
+        height: 14px;
+        padding: 4px 1px;
+        background-clip: content-box;
+    }
+}
+
 .tracker-dash:hover {
     background: var(--text-primary);
     height: 20px;
@@ -486,6 +583,12 @@ onMounted(() => {
     background: var(--text-primary);
     height: 35px;
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+    .tracker-dash.active {
+        height: 28px;
+    }
 }
 
 .tooltip {
@@ -508,6 +611,7 @@ onMounted(() => {
     transform: translateY(-50%) translateX(0);
 }
 
+/* Gallery Section */
 .gallery-container {
     position: relative;
     width: 100%;
@@ -530,13 +634,19 @@ onMounted(() => {
     padding: 0 20px;
 }
 
+@media (max-width: 768px) {
+    .gallery-section {
+        padding: 0 35px 0 20px;
+    }
+}
+
 .image-wrapper {
     position: relative;
     z-index: 2;
-    width: 90%;
+    width: 88%;
     max-width: 1800px;
-    aspect-ratio: 4 / 5;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    aspect-ratio: 3 / 4;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.8);
     overflow: hidden;
     will-change: transform, clip-path;
 }
@@ -562,7 +672,7 @@ onMounted(() => {
     height: 100%;
     overflow: hidden;
     will-change: transform;
-    isolation: isolate; /* Lock blend tree within image boundary */
+    isolation: isolate;
 }
 
 .img-inner img {
@@ -570,10 +680,8 @@ onMounted(() => {
     height: 100%;
     object-fit: cover;
     display: block;
-    /* REMOVED will-change: transform to prevent separate hardware layer creation */
 }
 
-/* Typography Fluid Scaling & Container Boundaries */
 .title-wrapper {
     position: absolute;
     top: 50%; 
@@ -582,9 +690,9 @@ onMounted(() => {
     text-align: center;
     z-index: 10;
     width: 100%;
-    max-width: 90%; /* Prevents text from touching edge boundaries */
+    max-width: 92%;
     pointer-events: none;
-    padding: 0 1rem;
+    padding: 0 0.5rem;
     box-sizing: border-box;
     mix-blend-mode: difference; 
 }
@@ -594,7 +702,7 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 0.2em 0; /* Padding prevents dynamic GSAP animations from clipping font descenders */
+    padding: 0.2em 0;
     width: 100%;
 }
 
@@ -608,27 +716,32 @@ onMounted(() => {
 
 .main-title {
     font-family: var(--font-serif);
-    /* Reduced max clamp bound slightly (from 14vw to 9vw) so long titles fit nicely */
-    font-size: clamp(2rem, 8vw, 9vw);
+    font-size: clamp(1.8rem, 8.5vw, 3.2rem);
     font-weight: 900;
     font-style: italic;
     margin: 0;
-    line-height: 0.9;
-    letter-spacing: -0.03em;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
     text-transform: uppercase;
     color: #ffffff;
-    
-    /* Responsive overflow prevention */
     max-width: 100%;
-    white-space: normal; /* Allows multi-word wrapping on smaller aspect ratio screens if necessary */
+    white-space: normal;
     word-break: break-word;
     text-align: center;
     will-change: transform, opacity;
 }
 
+@media (min-width: 769px) {
+    .main-title {
+        font-size: clamp(2rem, 8vw, 9vw);
+        letter-spacing: -0.03em;
+        line-height: 0.9;
+    }
+}
+
 .subtitle {
-    font-size: clamp(8px, 1.4vw, 11px);
-    letter-spacing: clamp(3px, 0.8vw, 6px);
+    font-size: clamp(8px, 2.5vw, 11px);
+    letter-spacing: clamp(2px, 1vw, 6px);
     color: #ffffff;
     margin-top: 1vh;
     text-transform: uppercase;
@@ -646,12 +759,12 @@ onMounted(() => {
 
 .meta-row {
     position: absolute;
-    left: 12px; right: 12px;
+    left: 10px; right: 10px;
     display: flex;
     justify-content: space-between;
-    font-size: clamp(7px, 1.2vw, 9px);
+    font-size: 8px;
     color: var(--text-primary);
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     z-index: 11;
 }
@@ -660,12 +773,13 @@ onMounted(() => {
     .meta-row {
         left: 20px;
         right: 20px;
+        font-size: clamp(7px, 1.2vw, 9px);
         letter-spacing: 2px;
     }
 }
 
-.meta-row.top { top: 12px; }
-.meta-row.bottom { bottom: 12px; }
+.meta-row.top { top: 10px; }
+.meta-row.bottom { bottom: 10px; }
 
 @media (min-width: 769px) {
     .meta-row.top { top: 20px; }
@@ -673,9 +787,10 @@ onMounted(() => {
 }
 
 .meta-block {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
-    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 3px 6px;
     border: 1px solid var(--border-color);
     will-change: transform, opacity;
 }
@@ -684,5 +799,24 @@ onMounted(() => {
     .meta-block {
         padding: 6px 12px;
     }
+}
+
+.mobile-swipe-hint {
+    position: absolute;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    z-index: 102;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.mobile-swipe-hint span {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    text-transform: uppercase;
 }
 </style>

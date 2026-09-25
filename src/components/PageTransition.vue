@@ -1,14 +1,11 @@
 <template>
     <div class="cinematic-transition-container" ref="containerRef" v-show="isActive">
-        <!-- Dual Curtain Shutters -->
         <div class="shutter shutter-top" ref="shutterTopRef"></div>
         <div class="shutter shutter-bottom" ref="shutterBottomRef"></div>
 
-        <!-- Cinema Framing Overlay Lines -->
         <div class="transition-border border-top" ref="borderTopRef"></div>
         <div class="transition-border border-bottom" ref="borderBottomRef"></div>
 
-        <!-- Central Typographic Transition Label -->
         <div class="overlay-content">
             <span class="scene-label" ref="labelRef">// SCENE LOADING</span>
             <h1 class="scene-title" ref="titleRef">{{ currentTitle }}</h1>

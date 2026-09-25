@@ -1,3 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,900&family=Inter:wght@300;400;600&display=swap');
+
+:root {
+    --bg-color: #000000;
+    --text-primary: #ffffff;
+    --text-muted: #888888;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'Inter', sans-serif;
+}
+
 html,
 body,
 #app {
@@ -10,4 +21,36 @@ body,
 * {
     cursor: none !important;
     box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) var(--bg-color, #0a0a0a);
+}
+
+::selection {
+    background-color: #ff0055; 
+    color: #ffffff;
+}
+
+::-webkit-scrollbar {
+    width: 6px;  
+    height: 6px; 
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color, #0a0a0a);
+    border-left: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 0px; 
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-primary, #ffffff);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.7);
 }

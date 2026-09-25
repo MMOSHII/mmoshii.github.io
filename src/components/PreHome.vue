@@ -107,7 +107,6 @@ const setCardRef = (el, idx) => {
 
 const currentTime = ref('00:00:00')
 let timer = null
-
 let leftTween = null
 let rightTween = null
 
@@ -115,8 +114,10 @@ const HOLD_DURATION = 1800
 const DECAY_SPEED = 2.5
 const isHolding = ref(false)
 const holdProgress = ref(0)
-let rawHoldProgress = 0 // Non-reactive tracker for RAF loop
+let rawHoldProgress = 0 
 let animationFrame = null
+
+let cardSetters = []
 
 const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768
@@ -130,7 +131,17 @@ const getCardImage = (indexOffset) => {
     return new URL(`../${rawPath.replace('./', '')}`, import.meta.url).href
 }
 
-// Directly updates DOM styles to prevent Vue reactivity overhead during hold animation loop
+const initCardSetters = () => {
+    cardSetters = cardRefs.map(card => {
+        if (!card) return null
+        return {
+            rotateY: gsap.quickSetter(card, "rotateY", "deg"),
+            z: gsap.quickSetter(card, "z", "px"),
+            scale: gsap.quickSetter(card, "scale")
+        }
+    })
+}
+
 const updateHoldStyles = (progressValue) => {
     const ratio = progressValue / 100
     
@@ -151,14 +162,19 @@ const updateHoldStyles = (progressValue) => {
     const maxDepth = -180 * ratio
     const cardScaleVal = 1 + (ratio * 0.15)
 
-    cardRefs.forEach((card) => {
-        if (!card) return
-        const idx = cardRefs.indexOf(card) % 5
-        const centerOffset = idx - 2
-        const rotateY = centerOffset * (maxRotation / 2)
-        const translateZ = -Math.abs(centerOffset) * (Math.abs(maxDepth) / 2)
+    cardRefs.forEach((card, idx) => {
+        const setter = cardSetters[idx]
+        if (!setter) return
 
-        card.style.transform = `rotateY(${rotateY}deg) translateZ(${translateZ}px) scale(${cardScaleVal})`
+        const idxInGroup = idx % 5
+        const centerOffset = idxInGroup - 2 
+
+        const rotateY = centerOffset * (maxRotation / 4)
+        const translateZ = -Math.abs(centerOffset) * (Math.abs(maxDepth) / 4)
+
+        setter.rotateY(rotateY)
+        setter.z(translateZ)
+        setter.scale(cardScaleVal)
     })
 }
 
@@ -226,17 +242,12 @@ const cancelHold = () => {
 
 const completeHold = () => {
     isHolding.value = false
-    rawHoldProgress = 0
-    holdProgress.value = 0
-    updateHoldStyles(0)
-    if (animationFrame) cancelAnimationFrame(animationFrame)
     emit('enter')
 }
 
-// WebGL Variables
 let renderer, scene, camera, animationFrameId
 let trailCanvas, trailCtx, trailTexture
-let material, textTexture
+let material, textTexture, geometry, mesh
 
 const mouse = { x: 0, y: 0, prevX: 0, prevY: 0, speed: 0 }
 const trailPoints = []
@@ -269,7 +280,6 @@ const createTextTexture = () => {
 
 const initTrailCanvas = () => {
     trailCanvas = document.createElement('canvas')
-    // Downsized displacement buffer for lightweight fill updates
     trailCanvas.width = 256
     trailCanvas.height = 256
     trailCtx = trailCanvas.getContext('2d', { willReadFrequently: true })
@@ -367,8 +377,8 @@ const initWebGL = () => {
         }
     })
 
-    const geometry = new THREE.PlaneGeometry(2, 2)
-    const mesh = new THREE.Mesh(geometry, material)
+    geometry = new THREE.PlaneGeometry(2, 2)
+    mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
@@ -427,7 +437,6 @@ const animateExit = () => {
     .to(bgOverlay.value, {
         scale: 4,
         opacity: 0.8,
-        filter: 'grayscale(0%) contrast(150%)',
         duration: 1.1
     }, 0)
 }
@@ -518,6 +527,7 @@ const loadFontsAndInit = async () => {
 onMounted(() => {
     checkMobile()
     window.addEventListener('resize', checkMobile)
+    initCardSetters()
 
     leftTween = gsap.to('.row-left', {
         xPercent: -50,
@@ -547,8 +557,19 @@ onUnmounted(() => {
     window.removeEventListener('resize', handleResize)
     window.removeEventListener('resize', checkMobile)
     if (timer) clearInterval(timer)
+    if (animationFrame) cancelAnimationFrame(animationFrame)
     if (animationFrameId) cancelAnimationFrame(animationFrameId)
-    if (renderer) renderer.dispose()
+    if (leftTween) leftTween.kill()
+    if (rightTween) rightTween.kill()
+    
+    if (textTexture) textTexture.dispose()
+    if (trailTexture) trailTexture.dispose()
+    if (geometry) geometry.dispose()
+    if (material) material.dispose()
+    if (renderer) {
+        renderer.dispose()
+        renderer.forceContextLoss()
+    }
 })
 </script>
 
@@ -556,8 +577,8 @@ onUnmounted(() => {
 @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Great+Vibes&family=Inter:wght@300;400;600&display=swap");
 
 .page-container {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
     font-family: "Inter", system-ui, -apple-system, sans-serif;
     overflow: hidden;
     min-height: 100vh;

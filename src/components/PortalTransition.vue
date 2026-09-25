@@ -1,49 +1,43 @@
 <template>
     <div ref="portalOverlay" class="portal-overlay">
-        <div ref="irisMask" class="iris-mask"></div>
+        <div ref="portalCard" class="portal-card"></div>
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import gsap from 'gsap';
+import { ref } from 'vue'
+import gsap from 'gsap'
 
-const portalOverlay = ref(null);
-const irisMask = ref(null);
+const portalOverlay = ref(null)
+const portalCard = ref(null)
 
 const animateEntrance = (onMidpoint) => {
     return new Promise((resolve) => {
+        gsap.set(portalOverlay.value, { display: 'block', opacity: 1 })
+
         const tl = gsap.timeline({
-            onComplete: resolve
-        });
-
-        // Force hardware acceleration layer promotion
-        gsap.set([portalOverlay.value, irisMask.value], { force3D: true });
-
-        tl.set(portalOverlay.value, { display: 'flex', opacity: 1 })
-          .set(irisMask.value, { scale: 0, opacity: 0 });
-
-        // 1. Fade in & scale iris mask outward to block screen
-        tl.to(irisMask.value, {
-            scale: 35,
-            opacity: 1,
-            duration: 1.0,
-            ease: 'expo.in',
             onComplete: () => {
-                if (onMidpoint) onMidpoint();
+                gsap.set(portalOverlay.value, { display: 'none' })
+                resolve()
             }
         })
-        // 2. Dissolve mask to reveal Home gallery
+
+        tl.to(portalCard.value, {
+            duration: 0.9,
+            ease: 'expo.inOut',
+            onComplete: () => {
+                if (onMidpoint) onMidpoint()
+            }
+        })
         .to(portalOverlay.value, {
             opacity: 0,
-            duration: 0.8,
+            duration: 0.5,
             ease: 'power2.out'
         })
-        .set(portalOverlay.value, { display: 'none' });
-    });
-};
+    })
+}
 
-defineExpose({ animateEntrance });
+defineExpose({ animateEntrance })
 </script>
 
 <style scoped>
@@ -52,21 +46,15 @@ defineExpose({ animateEntrance });
     inset: 0;
     z-index: 9999;
     display: none;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
     pointer-events: none;
     overflow: hidden;
     will-change: opacity;
 }
 
-.iris-mask {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #000000;
-    box-shadow: 0 0 120px 60px rgba(0, 0, 0, 0.9);
-    transform-origin: center center;
-    will-change: transform, opacity;
+.portal-card {
+    position: fixed;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
 }
 </style>

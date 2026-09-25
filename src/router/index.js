@@ -1,7 +1,6 @@
-// router/index.js
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '@/pages/home.vue'
 import ProjectDetail from '@/pages/ProjectDetail.vue'
+import HomeView from '@/pages/Home.vue'
 
 const router = createRouter({
     history: createWebHashHistory(),

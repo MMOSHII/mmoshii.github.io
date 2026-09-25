@@ -1,7 +1,6 @@
 <template>
     <div class="custom-cursor-dot" ref="cursorDot" :class="{ holding: isHolding }"></div>
     <div class="custom-cursor-circle" ref="cursorCircle" :class="{ holding: isHolding }">
-        <!-- SVG Progress Ring surrounding the cursor -->
         <svg 
             class="progress-ring" 
             :class="{ active: isHolding }"
@@ -10,20 +9,17 @@
             viewBox="0 0 88 88"
         >
             <defs>
-                <!-- Glowing Gradient -->
                 <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#ffffff" />
                     <stop offset="100%" stop-color="#888888" />
                 </linearGradient>
 
-                <!-- Soft Outer Glow Filter -->
                 <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="2" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
             </defs>
 
-            <!-- Background Track Circle -->
             <circle
                 class="progress-circle-bg"
                 cx="44"
@@ -31,7 +27,6 @@
                 r="36"
             />
 
-            <!-- Foreground Animated Progress Circle -->
             <circle
                 class="progress-circle"
                 cx="44"
@@ -108,7 +103,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Center dot */
 .custom-cursor-dot {
     position: fixed;
     top: 0;
@@ -120,12 +114,9 @@ onUnmounted(() => {
     background-color: #ffffff;
     border-radius: 50%;
     pointer-events: none;
-    z-index: 99999; /* Kept on top layer */
+    z-index: 99999;
     will-change: transform;
-    
-    /* Inverts background colors underneath the dot */
     mix-blend-mode: difference;
-    
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -133,7 +124,6 @@ onUnmounted(() => {
     transform: scale(1.6);
 }
 
-/* Outer Ring Wrapper with Color Inversion */
 .custom-cursor-circle {
     position: fixed;
     top: 0;
@@ -142,7 +132,6 @@ onUnmounted(() => {
     height: 80px;
     margin-top: -40px;
     margin-left: -40px;
-    /* Pure white border so difference blending inverts properly */
     border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 50%;
     pointer-events: none;
@@ -151,10 +140,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    /* Inverts colors beneath the outer ring */
     mix-blend-mode: difference;
-    
     transition: border-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -162,7 +148,6 @@ onUnmounted(() => {
     border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Progress SVG Ring */
 .progress-ring {
     position: absolute;
     inset: -4px;
@@ -187,7 +172,6 @@ onUnmounted(() => {
 
 .progress-circle {
     fill: transparent;
-    /* Changed to solid white for clear difference blending */
     stroke: #ffffff;
     stroke-width: 2.5;
     stroke-linecap: round;
