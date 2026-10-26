@@ -133,15 +133,14 @@ const direction = ref(1);
 let touchStartY = 0;
 let touchEndY = 0;
 
-// Throttle configuration for mouse wheel / trackpad
 let lastScrollTime = 0;
-const SCROLL_COOLDOWN_MS = 800; // Time in ms before a new scroll can be triggered
+const SCROLL_COOLDOWN_MS = 800;
 
 const items = ref(projectData);
 const triggerCinematicNavigate = inject('triggerCinematicNavigate');
 
 const navigateToProject = (slug) => {
-    if (isAnimating.value) return; // Prevent navigation clicks while transitioning
+    if (isAnimating.value) return; 
     const currentProject = items.value.find(p => p.slug === slug);
     const title = currentProject ? currentProject.title : 'PROJECT';
     
@@ -151,14 +150,12 @@ const navigateToProject = (slug) => {
 };
 
 const goToSlide = (index) => {
-    // Guard against clicks/scrolls during active transition
     if (isAnimating.value || activeIndex.value === index) return;
     direction.value = index > activeIndex.value ? 1 : -1;
     activeIndex.value = index;
 };
 
 const changeSlide = (dir) => {
-    // Strict Guard: block transition request if already animating
     if (isAnimating.value) return;
     
     direction.value = dir;
@@ -170,7 +167,7 @@ const changeSlide = (dir) => {
 };
 
 const onBeforeEnter = (el) => {
-    isAnimating.value = true; // Lock animations
+    isAnimating.value = true;
     const imgWrapper = el.querySelector('.image-wrapper');
     const img = el.querySelector('.img-inner img');
     const title = el.querySelector('.main-title');
@@ -207,11 +204,10 @@ const onEnter = (el, done) => {
     const subtitle = el.querySelector('.subtitle');
     const metas = el.querySelectorAll('.meta-block');
     
-    // Slightly faster duration prevents "laggy/sluggish" input feel
     const tl = gsap.timeline({ 
         defaults: { ease: 'power4.out' },
         onComplete: () => {
-            isAnimating.value = false; // Unlock guard only when timeline is completely done
+            isAnimating.value = false;
             done();
         } 
     });
@@ -288,14 +284,9 @@ const onLeave = (el, done) => {
     }, 0);
 };
 
-// WHEEL HANDLER WITH THROTTLE & ANIMATION LOCK
 const handleWheel = (e) => {
     const now = Date.now();
-    
-    // 1. Ignore wheel events if an animation is actively playing
     if (isAnimating.value) return;
-
-    // 2. Ignore wheel events if within the cooldown threshold (prevents trackpad inertia spam)
     if (now - lastScrollTime < SCROLL_COOLDOWN_MS) return;
 
     if (Math.abs(e.deltaY) > 20) {
@@ -304,7 +295,6 @@ const handleWheel = (e) => {
     }
 };
 
-// TOUCH HANDLERS WITH ANIMATION LOCK
 const handleTouchStart = (e) => {
     if (isAnimating.value) return;
     touchStartY = e.touches[0].clientY;

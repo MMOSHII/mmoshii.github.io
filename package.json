@@ -10,15 +10,15 @@
         "deploy": "npm run build && gh-pages -d dist"
     },
     "dependencies": {
-        "vue": "^3.5.40",
         "gsap": "^3.15.0",
         "three": "^0.185.1",
+        "vue": "^3.5.40",
         "vue-router": "^5.3.1"
     },
     "devDependencies": {
-        "vite": "^8.1.5",
-        "gh-pages": "^6.3.0",
         "@vitejs/plugin-vue": "^6.0.8",
+        "gh-pages": "^6.1.1",
+        "vite": "^8.1.5",
         "vite-plugin-vue-devtools": "^8.1.5"
     },
     "engines": {

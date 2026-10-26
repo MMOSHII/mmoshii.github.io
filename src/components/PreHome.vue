@@ -395,7 +395,7 @@ const initWebGL = () => {
                 p.age += 1
 
                 const radius = Math.max(0, 50 * p.force * (1 - p.age / maxAge))
-                if (radius > 0) {
+                if (radius >= 0) {
                     const gradient = trailCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius)
                     gradient.addColorStop(0, `rgba(255, 255, 255, ${0.8 * (1 - p.age / maxAge)})`)
                     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')

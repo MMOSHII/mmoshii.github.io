@@ -1,4 +1,5 @@
 <template>
+    <!-- <div class="app-container protected-container"> -->
     <div class="app-container">
         <PageTransition ref="cinematicRef" />
         <PortalTransition ref="portalRef" />
@@ -18,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, computed, provide } from 'vue'
+import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import PreHome from '@/components/PreHome.vue'
@@ -32,6 +33,24 @@ const hasEntered = ref(false)
 const preHomeRef = ref(null)
 const cinematicRef = ref(null)
 const portalRef = ref(null)
+
+const preventBack = () => {
+    window.history.pushState(null, '', window.location.href)
+}
+
+const preventContextMenu = (e) => {
+    e.preventDefault();
+};
+
+const preventShortcuts = (e) => {
+    if (e.ctrlKey && ['c', 'v', 'u'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+    }
+
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i')) {
+        e.preventDefault();
+    }
+};
 
 const showPreHome = computed(() => {
     return route.path === '/' && !hasEntered.value
@@ -61,6 +80,19 @@ const triggerCinematicNavigate = async (nextTitle, targetPath) => {
         router.push(targetPath)
     }
 }
+
+onMounted(() => {
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', preventBack);
+    document.addEventListener('contextmenu', preventContextMenu);
+    document.addEventListener('keydown', preventShortcuts);
+})
+
+onUnmounted(() => {
+    window.removeEventListener('popstate', preventBack);
+    document.removeEventListener('contextmenu', preventContextMenu);
+    document.removeEventListener('keydown', preventShortcuts);
+})
 
 provide('triggerCinematicNavigate', triggerCinematicNavigate)
 </script>
