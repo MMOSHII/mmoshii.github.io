@@ -18,8 +18,8 @@
         <div class="project-detail" v-if="project" :key="route.params.slug">
             <section class="hero-section">
                 <div class="meta-tags">
-                    <span class="tag">{{ project.metaTopLeft || 'PROJECT' }}</span>
-                    <span class="tag">{{ project.metaBottomRight || '2026' }}</span>
+                    <span class="tag">{{ project.techStack || 'PROJECT' }}</span>
+                    <span class="tag">{{ project.status || '2026' }}</span>
                 </div>
                 
                 <h1 class="main-title" ref="titleRef">{{ project.title }}</h1>
@@ -51,7 +51,7 @@
                     </div>
                     <div class="info-block">
                         <span class="info-label">STATS</span>
-                        <p class="info-value">{{ project.metaBottomLeft || 'Done' }}</p>
+                        <p class="info-value">{{ project.stats || 'Done' }}</p>
                     </div>
                 </div>
 

@@ -104,4 +104,14 @@ provide('triggerCinematicNavigate', triggerCinematicNavigate)
     min-height: 100vh;
     background-color: var(--bg-color);
 }
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
 </style>

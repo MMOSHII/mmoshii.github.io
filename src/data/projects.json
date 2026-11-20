@@ -16,9 +16,9 @@
             "/assets/berzier-2.png",
             "/assets/berzier-4.png"
         ],
-        "metaTopLeft": "Vue.js • OpenCV",
-        "metaTopRight": "WEB DEV",
-        "metaBottomRight": "HOBBYIST"
+        "category": "WEB DEV",
+        "status": "HOBBYIST",
+        "stats": "Done"
     },
     {
         "id": 2,
@@ -38,9 +38,9 @@
             "/assets/pdf-4.png",
             "/assets/pdf-5.png"
         ],
-        "metaTopLeft": "Vue.js • Tesseract",
-        "metaTopRight": "WEB DEV",
-        "metaBottomRight": "HOBBYIST"
+        "category": "WEB DEV",
+        "status": "HOBBYIST",
+        "stats": "Done"
     },
     {
         "id": 3,
@@ -60,8 +60,8 @@
             "/assets/mic-4.png",
             "/assets/mic-5.png"
         ],
-        "metaTopLeft": "Vue.js • FastAPI",
-        "metaTopRight": "WEB DEV",
-        "metaBottomRight": "Tugas Akhir"
+        "category": "FULL-STACK DEV",
+        "status": "TUGAS AKHIR",
+        "stats": "Done"
     }
 ]

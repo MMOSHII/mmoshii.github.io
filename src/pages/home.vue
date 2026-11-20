@@ -9,13 +9,13 @@
         <CustomCursor :is-holding="isAnimating" :progress="0" />
 
         <div class="bg-blur">
-            <div 
-                v-for="(item, index) in items" 
-                :key="'bg-' + item.id"
+            <div
+                v-for="(project, index) in projects"
+                :key="'bg-' + project.id"
                 class="bg-image-wrapper"
                 :class="{ active: activeIndex === index }"
             >
-                <img :src="item.image" class="bg-image" alt="" />
+                <img :src="project.image" class="bg-image" alt="" />
             </div>
             <div class="bg-overlay"></div>
         </div>
@@ -56,45 +56,45 @@
         <aside class="sidebar-right">
             <div class="sidebar-text desktop-only">// INDEX //</div>
             <div class="vertical-tracker">
-                <div 
-                    v-for="(item, index) in items" 
-                    :key="'track-' + item.id"
+                <div
+                    v-for="(project, index) in projects"
+                    :key="'track-' + project.id"
                     class="tracker-dash"
                     :class="{ active: activeIndex === index }"
                     @click="goToSlide(index)"
                     :aria-label="`Go to slide ${index + 1}`"
                 >
-                    <span class="tooltip desktop-only">{{ item.title }}</span>
+                    <span class="tooltip desktop-only">{{ project.title }}</span>
                 </div>
             </div>
             <div class="sidebar-text bottom desktop-only">2026</div>
         </aside>
 
         <main class="gallery-container">
-            <transition-group 
+            <transition-group
                 :css="false"
                 @before-enter="onBeforeEnter"
                 @enter="onEnter"
                 @leave="onLeave"
-                tag="div" 
+                tag="div"
                 class="gallery-track"
             >
-                <section 
-                    v-for="(item, index) in items" 
-                    :key="item.id" 
+                <section
+                    v-for="(project, index) in projects"
+                    :key="project.id"
                     v-show="activeIndex === index"
                     class="gallery-section"
                 >
-                    <div class="image-wrapper" @click="navigateToProject(item.slug)">
+                    <div class="image-wrapper" @click="navigateToProject(project.slug)">
                         <div class="img-inner">
-                            <img :src="item.image" :alt="item.title" />
+                            <img :src="project.image" :alt="project.title" />
 
                             <div class="title-wrapper">
                                 <div class="title-mask">
-                                    <h1 class="main-title">{{ item.title }}</h1>
+                                    <h1 class="main-title">{{ project.title }}</h1>
                                 </div>
                                 <div class="subtitle-mask">
-                                    <p class="subtitle">{{ item.subtitle }}</p>
+                                    <p class="subtitle">{{ project.subtitle }}</p>
                                 </div>
                             </div>
                         </div>
@@ -102,12 +102,12 @@
                         <div class="glass-border"></div>
 
                         <div class="meta-row top">
-                            <span class="meta-block">{{ item.metaTopLeft }}</span>
-                            <span class="meta-block right desktop-only">{{ item.metaTopRight }}</span>
+                            <span class="meta-block">{{ project.techStack }}</span>
+                            <span class="meta-block right desktop-only">{{ project.category }}</span>
                         </div>
                         <div class="meta-row bottom">
-                            <span class="meta-block">{{ item.year }}</span>
-                            <span class="meta-block right">{{ item.metaBottomRight }}</span>
+                            <span class="meta-block">{{ project.year }}</span>
+                            <span class="meta-block right">{{ project.status }}</span>
                         </div>
                     </div>
                 </section>
@@ -136,14 +136,14 @@ let touchEndY = 0;
 let lastScrollTime = 0;
 const SCROLL_COOLDOWN_MS = 800;
 
-const items = ref(projectData);
+const projects = ref(projectData);
 const triggerCinematicNavigate = inject('triggerCinematicNavigate');
 
 const navigateToProject = (slug) => {
-    if (isAnimating.value) return; 
-    const currentProject = items.value.find(p => p.slug === slug);
-    const title = currentProject ? currentProject.title : 'PROJECT';
-    
+    if (isAnimating.value) return;
+    const project = projects.value.find(p => p.slug === slug);
+    const title = project ? project.title : 'PROJECT';
+
     if (triggerCinematicNavigate) {
         triggerCinematicNavigate(title, `/${slug}`);
     }
@@ -157,12 +157,12 @@ const goToSlide = (index) => {
 
 const changeSlide = (dir) => {
     if (isAnimating.value) return;
-    
+
     direction.value = dir;
     if (dir === 1) {
-        activeIndex.value = (activeIndex.value + 1) % items.value.length;
+        activeIndex.value = (activeIndex.value + 1) % projects.value.length;
     } else {
-        activeIndex.value = (activeIndex.value - 1 + items.value.length) % items.value.length;
+        activeIndex.value = (activeIndex.value - 1 + projects.value.length) % projects.value.length;
     }
 };
 

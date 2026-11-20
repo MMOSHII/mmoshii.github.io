@@ -11,7 +11,6 @@
         <CustomCursor :is-holding="isHolding" :progress="holdProgress" />
 
         <div ref="bgOverlay" class="bg-overlay">
-            <!-- Row 1 Top -->
             <div class="row row-left">
                 <div class="row-inner">
                     <div v-for="(n, idx) in 5" :key="`top-1-${n}`" class="card" :ref="el => setCardRef(el, idx)">
@@ -25,7 +24,6 @@
                 </div>
             </div>
 
-            <!-- Row 2 Center -->
             <div class="row row-right">
                 <div class="row-inner">
                     <div v-for="(n, idx) in 5" :key="`center-1-${n}`" class="card" :ref="el => setCardRef(el, idx + 10)">
@@ -39,7 +37,6 @@
                 </div>
             </div>
 
-            <!-- Row 3 Bottom -->
             <div class="row row-left">
                 <div class="row-inner">
                     <div v-for="(n, idx) in 5" :key="`bottom-1-${n}`" class="card" :ref="el => setCardRef(el, idx + 20)">
@@ -55,6 +52,7 @@
         </div>
 
         <div class="corner-vignette"></div>
+        <div class="ambient-glow" :style="{ opacity: 0.15 + (holdProgress / 100) * 0.45 }"></div>
 
         <div class="font-preload-container" aria-hidden="true">
             <span style="font-family: 'Great Vibes', cursive;">M P</span>
@@ -62,13 +60,18 @@
         </div>
 
         <main class="content-wrapper">
-            <div class="hero-container">
-                <div ref="eyebrowRef" class="brand-eyebrow">MMOSHII. Github</div>
+            <div ref="heroRef" class="hero-container">
+                <div ref="eyebrowRef" class="brand-eyebrow">MMOSHII // PORTFOLIO</div>
                 
                 <div class="title-canvas-wrapper" ref="canvasContainer"></div>
 
-                <div ref="dividerRef" class="title-divider"></div>
-                <p ref="subtitleRef" class="brand-subtitle">Press and hold anywhere to enter</p>
+                <div ref="dividerRef" class="title-divider">
+                    <div class="title-divider-fill" :style="{ transform: `scaleX(${holdProgress / 100})` }"></div>
+                </div>
+
+                <p ref="subtitleRef" class="brand-subtitle" :class="{ 'is-holding': isHolding }">
+                    {{ isHolding ? `Entering Gallery — ${Math.round(holdProgress)}%` : 'Press and hold anywhere to enter' }}
+                </p>
             </div>
         </main>
 
@@ -93,6 +96,7 @@ const emit = defineEmits(['enter'])
 
 const pageContainer = ref(null)
 const bgOverlay = ref(null)
+const heroRef = ref(null)
 const eyebrowRef = ref(null)
 const dividerRef = ref(null)
 const subtitleRef = ref(null)
@@ -109,13 +113,16 @@ const currentTime = ref('00:00:00')
 let timer = null
 let leftTween = null
 let rightTween = null
+let webglRafId = null
+let heroQuickX = null
+let heroQuickY = null
 
-const HOLD_DURATION = 1800
-const DECAY_SPEED = 2.5
+const HOLD_DURATION = 1600
+const DECAY_SPEED = 2.8
 const isHolding = ref(false)
 const holdProgress = ref(0)
-let rawHoldProgress = 0 
 let animationFrame = null
+let hasCompleted = false
 
 let cardSetters = []
 
@@ -123,9 +130,9 @@ const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768
 }
 
-const getCardImage = (indexOffset) => {
+const getCardImage = (imageIndex) => {
     if (!projectData || projectData.length === 0) return ''
-    const index = Math.abs(indexOffset) % projectData.length
+    const index = Math.abs(imageIndex) % projectData.length
     const rawPath = projectData[index].image
     if (rawPath.startsWith('/')) return rawPath
     return new URL(`../${rawPath.replace('./', '')}`, import.meta.url).href
@@ -144,12 +151,14 @@ const initCardSetters = () => {
 
 const updateHoldStyles = (progressValue) => {
     const ratio = progressValue / 100
-    
+    // Smooth ease-in-out curve for visual properties
+    const eased = ratio * ratio * (3 - 2 * ratio)
+
     if (pageContainer.value) {
-        const grayscaleVal = 100 - (ratio * 100)
-        const opacityVal = 0.28 + (ratio * 0.52)
-        const scaleVal = 1 + (ratio * 0.35)
-        const perspectiveVal = 1200 - (ratio * 400)
+        const grayscaleVal = 100 - (eased * 100)
+        const opacityVal = 0.28 + (eased * 0.55)
+        const scaleVal = 1 + (eased * 0.32)
+        const perspectiveVal = 1200 - (eased * 450)
 
         const style = pageContainer.value.style
         style.setProperty('--bg-grayscale', `${grayscaleVal}%`)
@@ -158,50 +167,51 @@ const updateHoldStyles = (progressValue) => {
         style.setProperty('--bg-perspective', `${perspectiveVal}px`)
     }
 
-    const maxRotation = 25 * ratio
-    const maxDepth = -180 * ratio
-    const cardScaleVal = 1 + (ratio * 0.15)
+    if (heroRef.value) {
+        gsap.set(heroRef.value, { scale: 1 + eased * 0.06 })
+    }
+
+    const maxRotation = 25 * eased
+    const maxDepth = -180 * eased
+    const cardScaleVal = 1 + (eased * 0.14)
 
     cardRefs.forEach((card, idx) => {
         const setter = cardSetters[idx]
         if (!setter) return
 
         const idxInGroup = idx % 5
-        const centerOffset = idxInGroup - 2 
+        const centerOffset = idxInGroup - 2
 
-        const rotateY = centerOffset * (maxRotation / 4)
-        const translateZ = -Math.abs(centerOffset) * (Math.abs(maxDepth) / 4)
-
-        setter.rotateY(rotateY)
-        setter.z(translateZ)
+        setter.rotateY(centerOffset * (maxRotation / 4))
+        setter.z(-Math.abs(centerOffset) * (Math.abs(maxDepth) / 4))
         setter.scale(cardScaleVal)
     })
 }
 
 const updateMarqueeSpeed = (progressRatio) => {
-    const currentSpeed = 1 + (progressRatio * 25)
+    const currentSpeed = 1 + (progressRatio * 22)
     if (leftTween) leftTween.timeScale(currentSpeed)
     if (rightTween) rightTween.timeScale(currentSpeed)
 }
 
 const startHold = () => {
+    if (hasCompleted) return
     if (animationFrame) cancelAnimationFrame(animationFrame)
     isHolding.value = true
 
-    const currentProgressRatio = rawHoldProgress / 100
-    const startTime = Date.now() - (currentProgressRatio * HOLD_DURATION)
+    const currentProgressRatio = holdProgress.value / 100
+    const startTime = performance.now() - (currentProgressRatio * HOLD_DURATION)
 
-    const updateProgress = () => {
+    const updateProgress = (now) => {
         if (!isHolding.value) return
 
-        const elapsedTime = Date.now() - startTime
-        rawHoldProgress = Math.min((elapsedTime / HOLD_DURATION) * 100, 100)
-        holdProgress.value = rawHoldProgress
+        const elapsedTime = now - startTime
+        holdProgress.value = Math.min((elapsedTime / HOLD_DURATION) * 100, 100)
 
-        updateHoldStyles(rawHoldProgress)
-        updateMarqueeSpeed(rawHoldProgress / 100)
+        updateHoldStyles(holdProgress.value)
+        updateMarqueeSpeed(holdProgress.value / 100)
 
-        if (rawHoldProgress >= 100) {
+        if (holdProgress.value >= 100) {
             completeHold()
         } else {
             animationFrame = requestAnimationFrame(updateProgress)
@@ -212,40 +222,33 @@ const startHold = () => {
 }
 
 const cancelHold = () => {
-    if (!isHolding.value && rawHoldProgress === 0) return
+    if (hasCompleted || (!isHolding.value && holdProgress.value === 0)) return
 
     isHolding.value = false
     if (animationFrame) cancelAnimationFrame(animationFrame)
 
-    let lastTime = Date.now()
-
-    const decayProgress = () => {
-        if (isHolding.value) return
-
-        const now = Date.now()
-        const deltaTime = now - lastTime
+    let lastTime = performance.now()
+    const decay = (now) => {
+        holdProgress.value = Math.max(0, holdProgress.value - ((now - lastTime) / HOLD_DURATION) * 100 * DECAY_SPEED)
         lastTime = now
 
-        rawHoldProgress = Math.max(0, rawHoldProgress - (deltaTime / HOLD_DURATION) * 100 * DECAY_SPEED)
-        holdProgress.value = rawHoldProgress
+        updateHoldStyles(holdProgress.value)
+        updateMarqueeSpeed(holdProgress.value / 100)
 
-        updateHoldStyles(rawHoldProgress)
-        updateMarqueeSpeed(rawHoldProgress / 100)
-
-        if (rawHoldProgress > 0) {
-            animationFrame = requestAnimationFrame(decayProgress)
+        if (holdProgress.value > 0) {
+            animationFrame = requestAnimationFrame(decay)
         }
     }
-
-    animationFrame = requestAnimationFrame(decayProgress)
+    animationFrame = requestAnimationFrame(decay)
 }
 
 const completeHold = () => {
+    hasCompleted = true
     isHolding.value = false
     emit('enter')
 }
 
-let renderer, scene, camera, animationFrameId
+let renderer, scene, camera
 let trailCanvas, trailCtx, trailTexture
 let material, textTexture, geometry, mesh
 
@@ -301,15 +304,17 @@ const vertexShader = `
 const fragmentShader = `
     uniform sampler2D uTexture;
     uniform sampler2D uDisplacement;
+    uniform float uTime;
+    uniform float uHold;
     varying vec2 vUv;
 
     void main() {
         vec4 disp = texture2D(uDisplacement, vUv);
-        float intensity = disp.r;
+        float intensity = disp.r + (uHold * 0.25);
         vec2 uv = vUv;
-        uv.x += sin(uv.y * 35.0) * intensity * 0.02;
-        uv.y += sin(uv.x * 35.0) * intensity * 0.02;
-        float split = intensity * 0.03; 
+        uv.x += sin(uv.y * 30.0 + uTime * 2.0) * intensity * 0.018;
+        uv.y += cos(uv.x * 30.0 + uTime * 1.5) * intensity * 0.018;
+        float split = intensity * 0.032; 
         float red = texture2D(uTexture, uv + vec2(split, 0.0)).r;
         float green = texture2D(uTexture, uv).g;
         float blue = texture2D(uTexture, uv - vec2(split, 0.0)).b;
@@ -319,6 +324,14 @@ const fragmentShader = `
 `
 
 const handleMouseMove = (e) => {
+    // Subtle magnetic parallax on hero text
+    if (!isMobile.value && heroQuickX && heroQuickY) {
+        const normX = (e.clientX / window.innerWidth - 0.5) * 2
+        const normY = (e.clientY / window.innerHeight - 0.5) * 2
+        heroQuickX(normX * 14)
+        heroQuickY(normY * 10)
+    }
+
     if (!canvasContainer.value) return
     const rect = canvasContainer.value.getBoundingClientRect()
     const x = (e.clientX - rect.left) / rect.width
@@ -373,7 +386,9 @@ const initWebGL = () => {
         transparent: true,
         uniforms: {
             uTexture: { value: textTexture },
-            uDisplacement: { value: trailTexture }
+            uDisplacement: { value: trailTexture },
+            uTime: { value: 0 },
+            uHold: { value: 0 }
         }
     })
 
@@ -384,9 +399,14 @@ const initWebGL = () => {
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
     window.addEventListener('resize', handleResize)
 
+    const clock = new THREE.Clock()
+
     const animate = () => {
-        if (trailPoints.length > 0) {
-            trailCtx.fillStyle = 'rgba(0, 0, 0, 0.05)'
+        material.uniforms.uTime.value = clock.getElapsedTime()
+        material.uniforms.uHold.value = holdProgress.value / 100
+
+        if (trailPoints.length >= 0) {
+            trailCtx.fillStyle = 'rgba(0, 0, 0, 0.06)'
             trailCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height)
 
             const maxAge = 40
@@ -395,7 +415,7 @@ const initWebGL = () => {
                 p.age += 1
 
                 const radius = Math.max(0, 50 * p.force * (1 - p.age / maxAge))
-                if (radius >= 0) {
+                if (radius > 0.5) {
                     const gradient = trailCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius)
                     gradient.addColorStop(0, `rgba(255, 255, 255, ${0.8 * (1 - p.age / maxAge)})`)
                     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
@@ -413,7 +433,7 @@ const initWebGL = () => {
         }
 
         renderer.render(scene, camera)
-        animationFrameId = requestAnimationFrame(animate)
+        webglRafId = requestAnimationFrame(animate)
     }
 
     animate()
@@ -423,21 +443,21 @@ const animateExit = () => {
     const tl = gsap.timeline({ defaults: { ease: 'power4.in' } })
 
     tl.to(canvasContainer.value, {
-        scale: 2.2,
+        scale: 1.8,
         opacity: 0,
-        filter: 'blur(20px)',
-        duration: 0.9
+        filter: 'blur(16px)',
+        duration: 0.7
     }, 0)
     .to([eyebrowRef.value, dividerRef.value, subtitleRef.value, footerRef.value], {
         opacity: 0,
-        y: -30,
-        duration: 0.6,
-        stagger: 0.05
+        y: -24,
+        duration: 0.5,
+        stagger: 0.04
     }, 0)
     .to(bgOverlay.value, {
-        scale: 4,
-        opacity: 0.8,
-        duration: 1.1
+        scale: 3.2,
+        opacity: 0.9,
+        duration: 0.85
     }, 0)
 }
 
@@ -452,7 +472,7 @@ const runEntranceAnimation = () => {
     })
     gsap.set(canvasContainer.value, { 
         opacity: 0, 
-        scale: 0.92, 
+        scale: 0.94, 
         filter: 'blur(10px)' 
     })
     gsap.set(dividerRef.value, { 
@@ -465,24 +485,24 @@ const runEntranceAnimation = () => {
 
     tl.to(bgOverlay.value, {
         opacity: 0.28,
-        duration: 1.8,
+        duration: 1.6,
         ease: 'power2.inOut'
     })
     .to(eyebrowRef.value, {
         opacity: 1,
         y: 0,
         duration: 0.8
-    }, '-=1.2')
+    }, '-=1.1')
     .to(canvasContainer.value, {
         opacity: 1,
         scale: 1,
         filter: 'blur(0px)',
-        duration: 1.2,
+        duration: 1.1,
         ease: 'power2.out'
     }, '-=0.6')
     .to(dividerRef.value, {
         scaleX: 1,
-        opacity: 0.4,
+        opacity: 1,
         duration: 0.8,
         ease: 'expo.out'
     }, '-=0.5')
@@ -529,6 +549,11 @@ onMounted(() => {
     window.addEventListener('resize', checkMobile)
     initCardSetters()
 
+    if (heroRef.value) {
+        heroQuickX = gsap.quickTo(heroRef.value, 'x', { duration: 0.7, ease: 'power3.out' })
+        heroQuickY = gsap.quickTo(heroRef.value, 'y', { duration: 0.7, ease: 'power3.out' })
+    }
+
     leftTween = gsap.to('.row-left', {
         xPercent: -50,
         duration: 35,
@@ -558,7 +583,7 @@ onUnmounted(() => {
     window.removeEventListener('resize', checkMobile)
     if (timer) clearInterval(timer)
     if (animationFrame) cancelAnimationFrame(animationFrame)
-    if (animationFrameId) cancelAnimationFrame(animationFrameId)
+    if (webglRafId) cancelAnimationFrame(webglRafId)
     if (leftTween) leftTween.kill()
     if (rightTween) rightTween.kill()
     
@@ -613,11 +638,12 @@ onUnmounted(() => {
 .card {
     width: 400px;
     height: 250px;
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
     flex-shrink: 0;
-    background-color: #1a1a1a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     transform-style: preserve-3d;
     will-change: transform;
     contain: strict;
@@ -631,6 +657,19 @@ onUnmounted(() => {
     backface-visibility: hidden;
 }
 
+.ambient-glow {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 65vw;
+    height: 65vw;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 65%);
+    z-index: 2;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
 .corner-vignette {
     position: fixed;
     inset: 0;
@@ -638,14 +677,14 @@ onUnmounted(() => {
     pointer-events: none;
     background: radial-gradient(
             circle at 100% 0%,
-            rgba(0, 0, 0, 0.98) 0%,
-            rgba(0, 0, 0, 0.6) 35%,
+            rgba(0, 0, 0, 0.96) 0%,
+            rgba(0, 0, 0, 0.55) 35%,
             transparent 70%
         ),
         radial-gradient(
             circle at 0% 100%,
-            rgba(0, 0, 0, 0.98) 0%,
-            rgba(0, 0, 0, 0.6) 35%,
+            rgba(0, 0, 0, 0.96) 0%,
+            rgba(0, 0, 0, 0.55) 35%,
             transparent 70%
         );
 }
@@ -681,6 +720,7 @@ onUnmounted(() => {
     text-align: center;
     width: 100%;
     max-width: 1200px;
+    will-change: transform;
 }
 
 .brand-eyebrow {
@@ -689,7 +729,7 @@ onUnmounted(() => {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.6em;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.65);
     margin-bottom: 1rem;
     margin-left: 0.6em;
     will-change: transform, opacity;
@@ -708,22 +748,40 @@ onUnmounted(() => {
 }
 
 .title-divider {
-    width: clamp(30px, 6vw, 60px);
+    position: relative;
+    width: clamp(90px, 14vw, 180px);
     height: 1px;
-    background-color: rgba(255, 255, 255, 0.4);
-    margin-bottom: 2rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin-bottom: 1.75rem;
+    overflow: hidden;
     will-change: transform, opacity;
+}
+
+.title-divider-fill {
+    position: absolute;
+    inset: 0;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    transform-origin: center;
+    transform: scaleX(0);
+    will-change: transform;
 }
 
 .brand-subtitle {
     font-family: "Inter", sans-serif;
-    font-size: clamp(0.65rem, 1.5vw, 0.95rem);
+    font-size: clamp(0.65rem, 1.5vw, 0.9rem);
     font-weight: 300;
     color: #d1d5db;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
     padding: 0 1rem;
+    transition: color 0.3s ease, letter-spacing 0.3s ease;
     will-change: transform, opacity;
+}
+
+.brand-subtitle.is-holding {
+    color: #ffffff;
+    letter-spacing: 0.35em;
 }
 
 .font-preload-container {
@@ -769,6 +827,12 @@ onUnmounted(() => {
     display: inline-block;
     opacity: 0.8;
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    animation: pulseDot 2.4s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.15); }
 }
 
 @media (max-width: 768px) {
@@ -776,15 +840,10 @@ onUnmounted(() => {
         width: 130vmax !important;
         height: 130vmax !important;
         gap: 1rem !important;
-        filter: none !important;
     }
 
     .card {
         transform-style: flat !important;
-    }
-
-    .title-canvas-wrapper {
-        filter: none !important;
     }
 
     .row-inner {
